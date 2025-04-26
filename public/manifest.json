@@ -1,0 +1,9 @@
+{
+  "short_name": "azlm-crochet-frame-settings",
+  "name": "azlm-crochet-frame-settings",
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#000000",
+  "background_color": "#ffffff"
+}
+
