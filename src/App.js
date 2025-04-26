@@ -62,6 +62,7 @@ const Card = styled.div`
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  gap: 1rem;
 `;
 
 const Grid = styled.div`
@@ -84,15 +85,15 @@ const Pixel = styled.div`
 const ColorControl = styled.label`
   display: flex;
   align-items: center;
-  gap: 0.3125rem;
+  gap: 1rem;
   color: white;
   cursor: pointer;
-  padding: 0.3125rem 0.625rem;
-  border-radius: 0.25rem;
-  transition: background-color 0.2s;
+  width: 100%;
+  font-size: 1.25rem;
 
-  &:hover {
-    background-color: #333;
+  &:focus {
+    outline: none;
+    background-color: transparent;
   }
 `;
 
@@ -107,8 +108,10 @@ const ColorPreview = styled.div`
 const SliderControl = styled.div`
   display: flex;
   flex-direction: column;
-  gap: 0.3125rem;
+  gap: 1rem;
+  width: 100%;
   color: white;
+  font-size: 1.25rem;
 `;
 
 const SliderLabel = styled.div`
