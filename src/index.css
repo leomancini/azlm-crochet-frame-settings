@@ -8,6 +8,10 @@ body {
   background-color: #000;
   position: fixed;
   width: 100%;
+
+  @media (hover: hover) {
+    background-color: rgba(0, 0, 0, 0.85);
+  }
 }
 
 code {

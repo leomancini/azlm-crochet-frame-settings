@@ -32,7 +32,13 @@ const Page = styled.div`
   padding-bottom: 0.5rem;
 
   @media (hover: hover) {
-    max-width: 31rem;
+    max-width: 32rem;
+    margin: 1rem auto;
+    background-color: #000000;
+    min-height: unset;
+    height: calc(100vh - 2rem);
+    width: calc(100% - 2rem);
+    border-radius: 1rem;
   }
 `;
 
@@ -304,6 +310,15 @@ const PresetLabel = styled.div`
   margin-top: 0.25rem;
 `;
 
+const PresetPreviewContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  height: 100%;
+`;
+
 const PresetPreview = styled.div`
   display: grid;
   grid-template-columns: repeat(8, 1fr);
@@ -312,6 +327,7 @@ const PresetPreview = styled.div`
   background: #000000;
   aspect-ratio: 1 / 1;
   height: 100%;
+  max-height: 8rem;
   overflow: hidden;
   align-self: center;
   margin-top: 0.25rem;
@@ -1049,43 +1065,45 @@ function App() {
                     onTouchEnd={(event) => handlePresetPressEnd(preset, event)}
                     numPresets={savedPresets.length}
                   >
-                    <PresetPreview>
-                      {Array(8)
-                        .fill()
-                        .map((_, y) =>
-                          Array(8)
-                            .fill()
-                            .map((_, x) => {
-                              // Get a static color based on position and active colors
-                              const activeColorIndices = preset.activeColors
-                                .map((active, index) => (active ? index : -1))
-                                .filter((index) => index !== -1);
+                    <PresetPreviewContainer>
+                      <PresetPreview>
+                        {Array(8)
+                          .fill()
+                          .map((_, y) =>
+                            Array(8)
+                              .fill()
+                              .map((_, x) => {
+                                // Get a static color based on position and active colors
+                                const activeColorIndices = preset.activeColors
+                                  .map((active, index) => (active ? index : -1))
+                                  .filter((index) => index !== -1);
 
-                              // Always show a color, using seeded random to pick which one
-                              const colorIndex =
-                                activeColorIndices[
-                                  Math.floor(
-                                    seededRandom(preset.id + x + y * 8) *
-                                      activeColorIndices.length
-                                  )
-                                ] || 0;
-                              const color = DEFAULT_COLORS[colorIndex];
+                                // Always show a color, using seeded random to pick which one
+                                const colorIndex =
+                                  activeColorIndices[
+                                    Math.floor(
+                                      seededRandom(preset.id + x + y * 8) *
+                                        activeColorIndices.length
+                                    )
+                                  ] || 0;
+                                const color = DEFAULT_COLORS[colorIndex];
 
-                              return (
-                                <PresetPreviewPixel
-                                  key={`${x}-${y}`}
-                                  color={
-                                    color
-                                      ? `#${color
-                                          .toString(16)
-                                          .padStart(6, "0")}`
-                                      : "#000"
-                                  }
-                                />
-                              );
-                            })
-                        )}
-                    </PresetPreview>
+                                return (
+                                  <PresetPreviewPixel
+                                    key={`${x}-${y}`}
+                                    color={
+                                      color
+                                        ? `#${color
+                                            .toString(16)
+                                            .padStart(6, "0")}`
+                                        : "#000"
+                                    }
+                                  />
+                                );
+                              })
+                          )}
+                      </PresetPreview>
+                    </PresetPreviewContainer>
                     <PresetLabel>{preset.name}</PresetLabel>
                   </Preset>
                 ))
