@@ -485,7 +485,7 @@ function App() {
           setMatchingPresetName(matchingPreset.name);
           // Don't change buttonState from "saved" to "applied" - but access it via a ref instead of dependency
           if (buttonState !== "saved") {
-            setButtonState("applied");
+            setButtonState("using");
           }
         } else {
           // Don't reset from "saved" state
@@ -737,14 +737,51 @@ function App() {
       if (matchingPreset) {
         setMatchingPresetName(matchingPreset.name);
         setSelectedPreset(matchingPreset.id);
-        if (buttonState !== "saved") {
-          setButtonState("apply");
+        // If we're already using this preset, keep showing "Using"
+        if (buttonState === "using" || buttonState === "applied") {
+          setButtonState("using");
+        } else {
+          // Check if these changes exactly match the saved server configuration
+          const isExactMatch = async () => {
+            try {
+              const response = await fetch(
+                "https://azlm-crochet-frame-server.noshado.ws/api/settings"
+              );
+              const settings = await response.json();
+
+              const colorsMatch =
+                settings.colors.every(
+                  (color) =>
+                    matchingPreset.activeColors[DEFAULT_COLORS.indexOf(color)]
+                ) &&
+                matchingPreset.activeColors.filter(Boolean).length ===
+                  settings.colors.length;
+
+              const isMatch =
+                matchingPreset.numSparkles === settings.num_sparkles &&
+                matchingPreset.sparkleSize === settings.sparkle_size &&
+                matchingPreset.speed === settings.speed &&
+                colorsMatch;
+
+              if (isMatch) {
+                setButtonState("using");
+              } else if (buttonState !== "saved") {
+                setButtonState("use");
+              }
+            } catch (error) {
+              console.error("Error checking server settings:", error);
+              if (buttonState !== "saved") {
+                setButtonState("use");
+              }
+            }
+          };
+          isExactMatch();
         }
         setHasChanges(false);
       } else {
         setMatchingPresetName(null);
         setSelectedPreset(null);
-        if (buttonState !== "saved") {
+        if (buttonState !== "saved" && buttonState !== "using") {
           setButtonState("apply");
         }
       }
@@ -1168,6 +1205,7 @@ function App() {
               buttonState === "saved" ||
               buttonState === "applying" ||
               buttonState === "applied" ||
+              buttonState === "using" ||
               (buttonState === "apply" && !hasChanges && !selectedPreset) ||
               (buttonState === "apply" && selectedPreset && !hasChanges)
             }
@@ -1184,6 +1222,10 @@ function App() {
               ? hasChanges
                 ? `Apply ${matchingPresetName}`
                 : `Using ${matchingPresetName}`
+              : buttonState === "use"
+              ? `Use ${matchingPresetName}`
+              : buttonState === "using"
+              ? `Using ${matchingPresetName}`
               : buttonState === "saving"
               ? "Save preset"
               : buttonState === "applying"
