@@ -351,9 +351,9 @@ function App() {
   const [activeColors, setActiveColors] = useState(
     Array(DEFAULT_COLORS.length).fill(false)
   );
-  const [numSparkles, setNumSparkles] = useState(300);
-  const [sparkleSize, setSparkleSize] = useState(2);
-  const [speed, setSpeed] = useState(50);
+  const [numSparkles, setNumSparkles] = useState();
+  const [sparkleSize, setSparkleSize] = useState();
+  const [speed, setSpeed] = useState();
   const [, setSparkles] = useState([]);
   const [grid, setGrid] = useState(
     Array(MATRIX_HEIGHT)
@@ -777,10 +777,10 @@ function App() {
               <Slider
                 type="range"
                 min="10"
-                max="500"
-                value={500 - speed}
+                max="100"
+                value={100 - speed}
                 onChange={(e) => {
-                  const newValue = 500 - parseInt(e.target.value);
+                  const newValue = 100 - parseInt(e.target.value);
                   setSpeed(newValue);
                   handleValueChange();
                 }}
