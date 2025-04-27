@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import styled from "styled-components";
 
 const DEFAULT_COLORS = [
@@ -231,16 +233,30 @@ const PresetPlaceholder = styled.div`
   justify-content: center;
   gap: 0.75rem;
   background-color: rgba(255, 255, 255, 0.05);
-  width: calc(100% - 3.5rem);
+  width: calc(100% - 3.5rem - 6rem);
   margin: 0 auto;
   color: rgba(255, 255, 255, 0.25);
   border-radius: 0.5rem;
+  padding: 0 3rem;
+  text-align: center;
 `;
+
+const PresetSpacer = styled.div`
+  width: 1.75rem;
+  flex: 0 0 1rem;
+`;
+
+// Seeded random number generator
+const seededRandom = (seed) => {
+  const x = Math.sin(seed) * 10000;
+  return x - Math.floor(x);
+};
 
 const Preset = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  align-items: center;
   gap: 0.75rem;
   background-color: ${(props) =>
     props.selected ? "rgba(255, 255, 255, 0.2)" : "rgba(255, 255, 255, 0.1)"};
@@ -249,7 +265,9 @@ const Preset = styled.div`
   min-height: 0;
   width: 100%;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: transform 0.2s, background-color 0.2s;
+  transform: scale(1);
+  touch-action: manipulation;
 
   &:first-child {
     margin-left: 1.75rem;
@@ -260,34 +278,57 @@ const Preset = styled.div`
   }
 
   ${({ numPresets }) =>
-    numPresets > 1 &&
+    numPresets === 2 &&
+    `
+      width: 50%;
+    `}
+
+  ${({ numPresets }) =>
+    numPresets > 2 &&
     `
       width: unset;
-      flex: 0 0 calc(100% - 8.75rem);
+      flex: 0 0 30%;
       align-self: stretch;
       scroll-snap-align: center;
       scroll-snap-stop: always;
     `}
 `;
 
-const PresetSpacer = styled.div`
-  width: 1.75rem;
-  flex: 0 0 1rem;
-`;
-
 const PresetLabel = styled.div`
   display: flex;
   flex-direction: row;
-  gap: 0.75rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  align-items: center;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.25rem;
+`;
+
+const PresetPreview = styled.div`
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.25rem;
+  padding: 0.25rem;
+  background: #000000;
+  aspect-ratio: 1 / 1;
+  height: 100%;
+  overflow: hidden;
+  align-self: center;
+  margin-top: 0.25rem;
+`;
+
+const PresetPreviewPixel = styled.div`
   width: 100%;
-  color: #ffffff;
-  font-size: 1.25rem;
-  font-weight: 800;
+  height: 100%;
+  background-color: ${(props) => props.color || "#000"};
 `;
 
 const Button = styled.button`
-  background-color: rgba(255, 255, 255, 0.1);
-  color: white;
+  background-color: ${(props) =>
+    props.isApply ? "white" : "rgba(255, 255, 255, 0.1)"};
+  color: ${(props) => (props.isApply ? "black" : "white")};
   border: none;
   padding: 0.75rem;
   width: calc(100% - 3.5rem);
@@ -302,6 +343,19 @@ const Button = styled.button`
     block &&
     `
       width: 100%;
+    `}
+
+  ${({ icon }) =>
+    icon &&
+    `
+      background-color: transparent;
+      padding: 0;
+      width: 2.25rem;
+      height: 2.25rem;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     `}
 
   &:not(:disabled):active {
@@ -363,7 +417,7 @@ function App() {
   const [activeTab, setActiveTab] = useState("colors");
   const [selectedPreset, setSelectedPreset] = useState(null);
   const [hasChanges, setHasChanges] = useState(false);
-  const [buttonState, setButtonState] = useState("loading");
+  const [buttonState, setButtonState] = useState("save");
   const [matchingPresetName, setMatchingPresetName] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [savedPresets, setSavedPresets] = useState(() => {
@@ -371,6 +425,9 @@ function App() {
     return saved ? JSON.parse(saved) : [];
   });
   const [presetButtonState, setPresetButtonState] = useState("apply");
+  const [isLongPress, setIsLongPress] = useState(false);
+  const pressStartTime = useRef(null);
+  const wasCanceled = useRef(false);
 
   // Fetch initial settings
   useEffect(() => {
@@ -412,9 +469,15 @@ function App() {
         if (matchingPreset) {
           setSelectedPreset(matchingPreset.id);
           setMatchingPresetName(matchingPreset.name);
-          setButtonState("applied");
+          // Don't change buttonState from "saved" to "applied" - but access it via a ref instead of dependency
+          if (buttonState !== "saved") {
+            setButtonState("applied");
+          }
         } else {
-          setButtonState("apply");
+          // Don't reset from "saved" state
+          if (buttonState !== "saved") {
+            setButtonState("save");
+          }
         }
 
         // Set all states at once to prevent flashing
@@ -423,13 +486,16 @@ function App() {
       } catch (error) {
         console.error("Error fetching settings:", error);
         setIsLoading(false);
-        setButtonState("apply");
+        // Don't reset from "saved" state on error either
+        if (buttonState !== "saved") {
+          setButtonState("save");
+        }
         setHasChanges(false);
       }
     };
 
     fetchSettings();
-  }, [savedPresets]);
+  }, [savedPresets]); // Removed buttonState from dependencies
 
   const checkIfMatchesPreset = () => {
     const matchingPreset = savedPresets.find(
@@ -455,42 +521,104 @@ function App() {
         );
         const settings = await response.json();
 
-        const matchingPreset = savedPresets.find((preset) => {
-          const colorsMatch =
-            settings.colors.every(
-              (color) => preset.activeColors[DEFAULT_COLORS.indexOf(color)]
-            ) &&
-            preset.activeColors.filter(Boolean).length ===
-              settings.colors.length;
+        // Only check for matching preset if no preset is currently selected
+        if (!selectedPreset) {
+          const matchingPreset = savedPresets.find((preset) => {
+            const colorsMatch =
+              settings.colors.every(
+                (color) => preset.activeColors[DEFAULT_COLORS.indexOf(color)]
+              ) &&
+              preset.activeColors.filter(Boolean).length ===
+                settings.colors.length;
 
-          return (
-            preset.numSparkles === settings.num_sparkles &&
-            preset.sparkleSize === settings.sparkle_size &&
-            preset.speed === settings.speed &&
-            colorsMatch
-          );
-        });
+            return (
+              preset.numSparkles === settings.num_sparkles &&
+              preset.sparkleSize === settings.sparkle_size &&
+              preset.speed === settings.speed &&
+              colorsMatch
+            );
+          });
 
-        if (matchingPreset) {
-          setSelectedPreset(matchingPreset.id);
-          setPresetButtonState("applied");
+          if (matchingPreset) {
+            setSelectedPreset(matchingPreset.id);
+            setPresetButtonState("applied");
+          } else {
+            setPresetButtonState("apply");
+          }
         } else {
-          setSelectedPreset(null);
-          setPresetButtonState("apply");
+          // If a preset is already selected, check if it's applied
+          const selectedPresetData = savedPresets.find(
+            (p) => p.id === selectedPreset
+          );
+          if (selectedPresetData) {
+            const colorsMatch =
+              settings.colors.every(
+                (color) =>
+                  selectedPresetData.activeColors[DEFAULT_COLORS.indexOf(color)]
+              ) &&
+              selectedPresetData.activeColors.filter(Boolean).length ===
+                settings.colors.length;
+
+            const isApplied =
+              selectedPresetData.numSparkles === settings.num_sparkles &&
+              selectedPresetData.sparkleSize === settings.sparkle_size &&
+              selectedPresetData.speed === settings.speed &&
+              colorsMatch;
+
+            setPresetButtonState(isApplied ? "applied" : "apply");
+          }
         }
       } catch (error) {
         console.error("Error checking API settings:", error);
-        setSelectedPreset(null);
-        setPresetButtonState("apply");
+        if (!selectedPreset) {
+          setPresetButtonState("apply");
+        }
       }
     }
 
     setActiveTab(tab);
     if (tab === "colors" || tab === "values") {
-      if (!hasChanges && checkIfMatchesPreset()) {
-        setButtonState("saved");
-      } else if (!hasChanges) {
-        setButtonState("save");
+      if (!hasChanges) {
+        // Check if current settings match the selected preset
+        if (selectedPreset) {
+          const selectedPresetData = savedPresets.find(
+            (p) => p.id === selectedPreset
+          );
+          if (selectedPresetData) {
+            const colorsMatch = activeColors.every(
+              (active, index) =>
+                active === selectedPresetData.activeColors[index]
+            );
+            const valuesMatch =
+              numSparkles === selectedPresetData.numSparkles &&
+              sparkleSize === selectedPresetData.sparkleSize &&
+              speed === selectedPresetData.speed;
+
+            if (colorsMatch && valuesMatch) {
+              // Preserve "saved" state when switching tabs
+              if (buttonState === "saved") {
+                // Keep the saved state
+              }
+              // Only show "applied" if the preset was actually applied
+              else if (presetButtonState === "applied") {
+                setButtonState("applied");
+              } else {
+                setButtonState("apply");
+              }
+              setMatchingPresetName(selectedPresetData.name);
+            } else {
+              setButtonState("apply");
+              setMatchingPresetName(selectedPresetData.name);
+            }
+          }
+        } else if (checkIfMatchesPreset()) {
+          // Don't change from "saved" to something else
+          if (buttonState !== "saved") {
+            setButtonState("saved");
+          }
+        } else {
+          setButtonState("save");
+        }
       }
     }
   };
@@ -559,10 +687,12 @@ function App() {
   };
 
   const handleValueChange = () => {
+    // Always allow value changes regardless of current state
     setHasChanges(true);
-    setButtonState("apply");
+    // Don't set button state here - let the effect handle it
     // Deselect preset when values change
     setSelectedPreset(null);
+    setMatchingPresetName(null);
   };
 
   useEffect(() => {
@@ -576,18 +706,35 @@ function App() {
           preset.speed === speed
       );
       if (matchingPreset) {
+        // Only update matchingPresetName if we found a match
         setMatchingPresetName(matchingPreset.name);
-        setButtonState("saved");
-        setHasChanges(false);
         // If values match a preset exactly, select that preset
         setSelectedPreset(matchingPreset.id);
+        // Set button state to "apply" only if it's not already "saved"
+        if (buttonState !== "saved") {
+          setButtonState("apply");
+        }
+        setHasChanges(false);
       } else {
+        // Only clear matchingPresetName if we're sure there's no match
         setMatchingPresetName(null);
         // If values don't match any preset, deselect the current preset
         setSelectedPreset(null);
+        // Only set to "apply" if it's not already "saved"
+        if (buttonState !== "saved") {
+          setButtonState("apply");
+        }
       }
     }
-  }, [activeColors, numSparkles, sparkleSize, speed, hasChanges, savedPresets]);
+  }, [
+    activeColors,
+    numSparkles,
+    sparkleSize,
+    speed,
+    hasChanges,
+    savedPresets,
+    buttonState
+  ]);
 
   const handleColorToggle = (index) => {
     setActiveColors((prev) => {
@@ -605,7 +752,6 @@ function App() {
     setSpeed(preset.speed);
     setSelectedPreset(preset.id);
     setHasChanges(false);
-    setButtonState("apply");
 
     try {
       const response = await fetch(
@@ -625,15 +771,21 @@ function App() {
         preset.speed === settings.speed &&
         colorsMatch;
 
+      // Update both states together to prevent flashing
       if (matches) {
         setPresetButtonState("applied");
-        setSelectedPreset(preset.id);
+        setButtonState("applied");
+        setMatchingPresetName(preset.name);
       } else {
         setPresetButtonState("apply");
+        setButtonState("apply");
+        setMatchingPresetName(preset.name);
       }
     } catch (error) {
       console.error("Error checking API settings:", error);
       setPresetButtonState("apply");
+      setButtonState("apply");
+      setMatchingPresetName(preset.name);
     }
   };
 
@@ -645,6 +797,79 @@ function App() {
       setSelectedPreset(null);
       setPresetButtonState("apply");
     }
+  };
+
+  const handleLongPress = (presetId, presetName, event) => {
+    // Always stop propagation and prevent default for the long press event
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+
+    if (window.confirm(`Are you sure you want to delete "${presetName}"?`)) {
+      deletePreset(presetId);
+    } else {
+      // If user cancels, prevent the preset from being selected
+      setIsLongPress(false);
+      setPresetButtonState("apply");
+      wasCanceled.current = true;
+    }
+  };
+
+  const handlePresetPress = (preset, event) => {
+    // If we're in a long press state or was canceled, prevent any selection
+    if (isLongPress || wasCanceled.current) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      wasCanceled.current = false;
+      return;
+    }
+    loadPreset(preset);
+    setButtonState("apply");
+    setMatchingPresetName(preset.name);
+  };
+
+  const handlePresetPressStart = (preset, event) => {
+    // Always stop propagation and prevent default for the press start
+    if (event) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    setIsLongPress(false);
+    wasCanceled.current = false;
+    pressStartTime.current = Date.now();
+
+    // Store the timeout ID so we can clear it if needed
+    const timeoutId = setTimeout(() => {
+      if (pressStartTime.current) {
+        setIsLongPress(true);
+        handleLongPress(preset.id, preset.name, event);
+      }
+    }, 1000);
+
+    // Store the timeout ID in the ref
+    pressStartTime.current = {
+      timestamp: Date.now(),
+      timeoutId
+    };
+  };
+
+  const handlePresetPressEnd = (preset, event) => {
+    // If we're in a long press state or was canceled, prevent any selection
+    if (isLongPress || wasCanceled.current) {
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+    }
+
+    // Clear the timeout if it exists
+    if (pressStartTime.current?.timeoutId) {
+      clearTimeout(pressStartTime.current.timeoutId);
+    }
+    pressStartTime.current = null;
   };
 
   const handlePresetApply = async () => {
@@ -801,19 +1026,58 @@ function App() {
                   <Preset
                     key={preset.id}
                     selected={selectedPreset === preset.id}
-                    onClick={() => loadPreset(preset)}
+                    onClick={(event) => handlePresetPress(preset, event)}
+                    onMouseDown={(event) =>
+                      handlePresetPressStart(preset, event)
+                    }
+                    onMouseUp={(event) => handlePresetPressEnd(preset, event)}
+                    onMouseLeave={(event) =>
+                      handlePresetPressEnd(preset, event)
+                    }
+                    onTouchStart={(event) =>
+                      handlePresetPressStart(preset, event)
+                    }
+                    onTouchEnd={(event) => handlePresetPressEnd(preset, event)}
                     numPresets={savedPresets.length}
                   >
+                    <PresetPreview>
+                      {Array(8)
+                        .fill()
+                        .map((_, y) =>
+                          Array(8)
+                            .fill()
+                            .map((_, x) => {
+                              // Get a static color based on position and active colors
+                              const activeColorIndices = preset.activeColors
+                                .map((active, index) => (active ? index : -1))
+                                .filter((index) => index !== -1);
+
+                              // Always show a color, using seeded random to pick which one
+                              const colorIndex =
+                                activeColorIndices[
+                                  Math.floor(
+                                    seededRandom(preset.id + x + y * 8) *
+                                      activeColorIndices.length
+                                  )
+                                ] || 0;
+                              const color = DEFAULT_COLORS[colorIndex];
+
+                              return (
+                                <PresetPreviewPixel
+                                  key={`${x}-${y}`}
+                                  color={
+                                    color
+                                      ? `#${color
+                                          .toString(16)
+                                          .padStart(6, "0")}`
+                                      : "#000"
+                                  }
+                                />
+                              );
+                            })
+                        )}
+                    </PresetPreview>
                     <PresetLabel>{preset.name}</PresetLabel>
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deletePreset(preset.id);
-                      }}
-                      block
-                    >
-                      Delete
-                    </Button>
                   </Preset>
                 ))
               )}
@@ -874,25 +1138,35 @@ function App() {
             disabled={
               buttonState === "loading" ||
               buttonState === "saving" ||
+              buttonState === "saved" ||
               buttonState === "applying" ||
               buttonState === "applied" ||
-              (buttonState === "apply" && !hasChanges)
+              (buttonState === "apply" && !hasChanges && !selectedPreset) ||
+              (buttonState === "apply" && selectedPreset && !hasChanges)
+            }
+            isApply={
+              buttonState === "apply" &&
+              (hasChanges || (selectedPreset && hasChanges))
             }
           >
             {buttonState === "loading"
               ? "Loading..."
-              : buttonState === "apply"
-              ? "Apply"
+              : buttonState === "apply" && selectedPreset
+              ? hasChanges
+                ? `Apply ${matchingPresetName}`
+                : `Using ${matchingPresetName}`
               : buttonState === "saving"
               ? "Save preset"
               : buttonState === "applying"
               ? "Applying..."
               : buttonState === "applied"
               ? matchingPresetName
-                ? `Applied ${matchingPresetName}`
+                ? `Using ${matchingPresetName}`
                 : "Applied"
-              : matchingPresetName
-              ? `Apply ${matchingPresetName}`
+              : buttonState === "saved"
+              ? `Saved as ${matchingPresetName}`
+              : hasChanges
+              ? "Apply"
               : "Save preset"}
           </Button>
         )}
@@ -901,16 +1175,16 @@ function App() {
             onClick={handlePresetApply}
             disabled={
               presetButtonState === "applying" ||
-              presetButtonState === "applied"
+              presetButtonState === "applied" ||
+              !selectedPreset
             }
+            isApply={presetButtonState === "apply" && selectedPreset}
           >
             {presetButtonState === "apply"
-              ? selectedPreset
-                ? "Apply"
-                : "Generate AI preset"
+              ? "Apply"
               : presetButtonState === "applying"
               ? "Applying..."
-              : `Applied ${
+              : `Using ${
                   savedPresets.find((p) => p.id === selectedPreset)?.name || ""
                 }`}
           </Button>
