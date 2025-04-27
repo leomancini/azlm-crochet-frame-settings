@@ -1027,7 +1027,9 @@ function App() {
             <Presets>
               {savedPresets.length === 0 ? (
                 <PresetPlaceholder>
-                  When you save presets, they'll show up here.
+                  When you save presets,
+                  <br />
+                  they'll show up here.
                 </PresetPlaceholder>
               ) : (
                 savedPresets.map((preset) => (
@@ -1180,7 +1182,7 @@ function App() {
               : "Save preset"}
           </Button>
         )}
-        {activeTab === "presets" && (
+        {activeTab === "presets" && savedPresets.length > 0 && (
           <Button
             onClick={handlePresetApply}
             disabled={
