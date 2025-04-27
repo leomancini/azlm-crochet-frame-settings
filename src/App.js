@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import styled from "styled-components";
 
 const DEFAULT_COLORS = [
@@ -495,7 +493,8 @@ function App() {
     };
 
     fetchSettings();
-  }, [savedPresets]); // Removed buttonState from dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [savedPresets]);
 
   const checkIfMatchesPreset = () => {
     const matchingPreset = savedPresets.find(
