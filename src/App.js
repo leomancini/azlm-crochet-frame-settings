@@ -651,12 +651,25 @@ function App() {
           throw new Error("Failed to update settings");
         }
 
+        // Set applied state and clear any existing timeout
+        if (window.applyTimeout) {
+          clearTimeout(window.applyTimeout);
+        }
+
         setButtonState("applied");
         setHasChanges(false);
 
         // After 1.5 seconds, change to "save" state
-        setTimeout(() => {
-          setButtonState("save");
+        window.applyTimeout = setTimeout(() => {
+          if (selectedPreset) {
+            setButtonState("apply");
+            setMatchingPresetName(
+              savedPresets.find((p) => p.id === selectedPreset)?.name || null
+            );
+          } else {
+            setButtonState("save");
+            setMatchingPresetName(null);
+          }
         }, 1500);
       } catch (error) {
         console.error("Error updating settings:", error);
@@ -693,10 +706,11 @@ function App() {
     // Deselect preset when values change
     setSelectedPreset(null);
     setMatchingPresetName(null);
+    setButtonState("apply");
   };
 
   useEffect(() => {
-    if (hasChanges) {
+    if (hasChanges && buttonState !== "applied" && buttonState !== "applying") {
       const matchingPreset = savedPresets.find(
         (preset) =>
           JSON.stringify(preset.activeColors) ===
@@ -706,21 +720,15 @@ function App() {
           preset.speed === speed
       );
       if (matchingPreset) {
-        // Only update matchingPresetName if we found a match
         setMatchingPresetName(matchingPreset.name);
-        // If values match a preset exactly, select that preset
         setSelectedPreset(matchingPreset.id);
-        // Set button state to "apply" only if it's not already "saved"
         if (buttonState !== "saved") {
           setButtonState("apply");
         }
         setHasChanges(false);
       } else {
-        // Only clear matchingPresetName if we're sure there's no match
         setMatchingPresetName(null);
-        // If values don't match any preset, deselect the current preset
         setSelectedPreset(null);
-        // Only set to "apply" if it's not already "saved"
         if (buttonState !== "saved") {
           setButtonState("apply");
         }
@@ -1150,7 +1158,9 @@ function App() {
             }
           >
             {buttonState === "loading"
-              ? "Loading..."
+              ? selectedPreset
+                ? `Using ${matchingPresetName}`
+                : "Loading..."
               : buttonState === "apply" && selectedPreset
               ? hasChanges
                 ? `Apply ${matchingPresetName}`
@@ -1160,7 +1170,7 @@ function App() {
               : buttonState === "applying"
               ? "Applying..."
               : buttonState === "applied"
-              ? matchingPresetName
+              ? selectedPreset
                 ? `Using ${matchingPresetName}`
                 : "Applied"
               : buttonState === "saved"
@@ -1184,6 +1194,10 @@ function App() {
               ? "Apply"
               : presetButtonState === "applying"
               ? "Applying..."
+              : presetButtonState === "applied"
+              ? `Using ${
+                  savedPresets.find((p) => p.id === selectedPreset)?.name || ""
+                }`
               : `Using ${
                   savedPresets.find((p) => p.id === selectedPreset)?.name || ""
                 }`}
