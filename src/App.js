@@ -916,12 +916,11 @@ function App() {
       event.preventDefault();
     }
 
-    if (window.confirm(`Are you sure you want to delete "${presetName}"?`)) {
+    if (window.confirm(`Delete ${presetName}?`)) {
       deletePreset(presetId);
     } else {
       // If user cancels, prevent the preset from being selected
       setIsLongPress(false);
-      setPresetButtonState("apply");
       wasCanceled.current = true;
     }
   };
