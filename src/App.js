@@ -1293,7 +1293,7 @@ function App() {
               : buttonState === "saving"
               ? "Save preset"
               : buttonState === "applying"
-              ? "Applying..."
+              ? "Applying"
               : buttonState === "applied"
               ? selectedPreset
                 ? `Using ${matchingPresetName}`
@@ -1318,7 +1318,7 @@ function App() {
             {presetButtonState === "apply"
               ? "Apply"
               : presetButtonState === "applying"
-              ? "Applying..."
+              ? "Applying"
               : presetButtonState === "applied"
               ? `Using ${
                   savedPresets.find((p) => p.id === selectedPreset)?.name || ""
