@@ -76,7 +76,7 @@ const NoApiKeyContainer = styled.div`
   align-items: center;
   justify-content: center;
   height: 100dvh;
-  width: 100%;
+  width: calc(100% - 4rem);
   gap: 1.5rem;
   padding: 2rem;
   text-align: center;
@@ -88,6 +88,7 @@ const NoApiKeyMessage = styled.div`
   font-size: 1.25rem;
   line-height: 1.5;
   max-width: 32rem;
+  margin-top: -4rem;
 `;
 
 const LoadingSpinner = styled.div`
