@@ -52,6 +52,26 @@ const LoadingContainer = styled.div`
   gap: 1.5rem;
 `;
 
+const NoApiKeyContainer = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100dvh;
+  width: 100%;
+  gap: 1.5rem;
+  padding: 2rem;
+  text-align: center;
+  color: white;
+  background-color: #000000;
+`;
+
+const NoApiKeyMessage = styled.div`
+  font-size: 1.25rem;
+  line-height: 1.5;
+  max-width: 32rem;
+`;
+
 const LoadingSpinner = styled.div`
   width: 2.5rem;
   height: 2.5rem;
@@ -416,6 +436,7 @@ class Sparkle {
 }
 
 function App() {
+  // All hooks at the top
   const [activeColors, setActiveColors] = useState(
     Array(DEFAULT_COLORS.length).fill(false)
   );
@@ -443,13 +464,30 @@ function App() {
   const pressStartTime = useRef(null);
   const wasCanceled = useRef(false);
 
+  // Function to get API key from URL parameters
+  const getApiKey = () => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("apiKey") || "";
+  };
+
+  // Function to get API URL with key
+  const getApiUrl = () => {
+    const apiKey = getApiKey();
+    return `https://azlm-crochet-frame-server.noshado.ws/api/settings${
+      apiKey ? `?apiKey=${apiKey}` : ""
+    }`;
+  };
+
+  // Check if API key is present
+  const hasApiKey = getApiKey() !== "";
+
   // Fetch initial settings
   useEffect(() => {
+    if (!hasApiKey) return; // Early return if no API key
+
     const fetchSettings = async () => {
       try {
-        const response = await fetch(
-          "https://azlm-crochet-frame-server.noshado.ws/api/settings"
-        );
+        const response = await fetch(getApiUrl());
         const settings = await response.json();
 
         // Update sparkle settings
@@ -510,7 +548,7 @@ function App() {
 
     fetchSettings();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [savedPresets]);
+  }, [savedPresets, hasApiKey]);
 
   const checkIfMatchesPreset = () => {
     const matchingPreset = savedPresets.find(
@@ -531,9 +569,7 @@ function App() {
   const handleTabChange = async (tab) => {
     if (tab === "presets") {
       try {
-        const response = await fetch(
-          "https://azlm-crochet-frame-server.noshado.ws/api/settings"
-        );
+        const response = await fetch(getApiUrl());
         const settings = await response.json();
 
         // Only check for matching preset if no preset is currently selected
@@ -651,16 +687,13 @@ function App() {
         };
 
         // Send POST request to update settings
-        const response = await fetch(
-          "https://azlm-crochet-frame-server.noshado.ws/api/settings",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json"
-            },
-            body: JSON.stringify(settings)
-          }
-        );
+        const response = await fetch(getApiUrl(), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(settings)
+        });
 
         if (!response.ok) {
           throw new Error("Failed to update settings");
@@ -744,9 +777,7 @@ function App() {
           // Check if these changes exactly match the saved server configuration
           const isExactMatch = async () => {
             try {
-              const response = await fetch(
-                "https://azlm-crochet-frame-server.noshado.ws/api/settings"
-              );
+              const response = await fetch(getApiUrl());
               const settings = await response.json();
 
               const colorsMatch =
@@ -786,6 +817,7 @@ function App() {
         }
       }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
     activeColors,
     numSparkles,
@@ -793,7 +825,8 @@ function App() {
     speed,
     hasChanges,
     savedPresets,
-    buttonState
+    buttonState,
+    hasApiKey
   ]);
 
   const handleColorToggle = (index) => {
@@ -814,9 +847,7 @@ function App() {
     setHasChanges(false);
 
     try {
-      const response = await fetch(
-        "https://azlm-crochet-frame-server.noshado.ws/api/settings"
-      );
+      const response = await fetch(getApiUrl());
       const settings = await response.json();
 
       const colorsMatch =
@@ -949,16 +980,13 @@ function App() {
       };
 
       // Send POST request to update settings
-      const response = await fetch(
-        "https://azlm-crochet-frame-server.noshado.ws/api/settings",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json"
-          },
-          body: JSON.stringify(settings)
-        }
-      );
+      const response = await fetch(getApiUrl(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(settings)
+      });
 
       if (!response.ok) {
         throw new Error("Failed to update settings");
@@ -1153,6 +1181,14 @@ function App() {
         return null;
     }
   };
+
+  if (!hasApiKey) {
+    return (
+      <NoApiKeyContainer>
+        <NoApiKeyMessage>No API key</NoApiKeyMessage>
+      </NoApiKeyContainer>
+    );
+  }
 
   if (isLoading) {
     return (
