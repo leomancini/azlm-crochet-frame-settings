@@ -16,6 +16,24 @@ const DEFAULT_COLORS = [
   0xffd700 // Gold
 ];
 
+// Function to calculate adjusted speed based on number of sparkles and size
+const calculateAdjustedSpeed = (baseSpeed, numSparkles, sparkleSize) => {
+  // Base speed is in milliseconds, lower is faster
+  // Ensure a minimum base speed of 15ms
+  const adjustedBaseSpeed = Math.max(baseSpeed, 15);
+
+  // Scale factor increases with more sparkles and larger sizes
+  const sparkleFactor = Math.pow(numSparkles / 40, 1); // Steeper curve for number of sparkles
+  const sizeFactor = Math.pow(sparkleSize / 2.5, 0.5); // Steeper curve for sparkle size
+
+  // Combine factors and apply to base speed with additional scaling
+  const adjustedSpeed =
+    adjustedBaseSpeed * (1 + sparkleFactor * sizeFactor * 1.5);
+
+  // Ensure minimum speed of 15ms and maximum of 3000ms
+  return Math.min(Math.max(adjustedSpeed, 15), 3000);
+};
+
 const MATRIX_WIDTH = 64;
 const MATRIX_HEIGHT = 64;
 const EDGE_PADDING = 0;
@@ -678,12 +696,12 @@ function App() {
     if (buttonState === "apply" || matchingPresetName) {
       setButtonState("applying");
       try {
-        // Prepare the settings data
+        // Prepare the settings data - use original speed value for server
         const settings = {
           colors: DEFAULT_COLORS.filter((_, index) => activeColors[index]),
           num_sparkles: numSparkles,
           sparkle_size: sparkleSize,
-          speed: speed
+          speed: speed // Use original speed value
         };
 
         // Send POST request to update settings
@@ -736,7 +754,7 @@ function App() {
       activeColors,
       numSparkles,
       sparkleSize,
-      speed
+      speed // Use original speed value
     };
 
     const updatedPresets = [...savedPresets, newPreset];
@@ -1006,6 +1024,13 @@ function App() {
       .map(() => new Sparkle(activeColors, sparkleSize));
     setSparkles(initialSparkles);
 
+    // Calculate adjusted speed based on current settings - only for browser simulation
+    const adjustedSpeed = calculateAdjustedSpeed(
+      speed,
+      numSparkles,
+      sparkleSize
+    );
+
     // Animation loop
     const interval = setInterval(() => {
       setSparkles((prevSparkles) => {
@@ -1034,7 +1059,7 @@ function App() {
         setGrid(newGrid);
         return newSparkles;
       });
-    }, speed);
+    }, adjustedSpeed);
 
     return () => clearInterval(interval);
   }, [activeColors, numSparkles, sparkleSize, speed]);
