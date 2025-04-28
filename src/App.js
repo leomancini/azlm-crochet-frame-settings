@@ -1282,7 +1282,9 @@ function App() {
                 : "Loading..."
               : buttonState === "apply" && selectedPreset
               ? hasChanges
-                ? `Apply ${matchingPresetName}`
+                ? matchingPresetName
+                  ? `Apply ${matchingPresetName}`
+                  : "Apply"
                 : `Using ${matchingPresetName}`
               : buttonState === "use"
               ? `Use ${matchingPresetName}`
