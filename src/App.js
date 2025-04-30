@@ -19,11 +19,11 @@ const DEFAULT_COLORS = [
 // Function to calculate adjusted speed based on number of sparkles and size
 const calculateAdjustedSpeed = (baseSpeed, numSparkles, sparkleSize) => {
   // Base speed is in milliseconds, lower is faster
-  const adjustedBaseSpeed = Math.max(baseSpeed, 5);
+  const adjustedBaseSpeed = Math.max(baseSpeed, 1);
 
   // Scale factor increases with more sparkles and larger sizes
-  const sparkleFactor = Math.pow(numSparkles, 0.25); // Steeper curve for number of sparkles
-  const sizeFactor = Math.pow(sparkleSize, 0.25); // Steeper curve for sparkle size
+  const sparkleFactor = Math.pow(numSparkles, 0.1);
+  const sizeFactor = Math.pow(sparkleSize, 0.1);
 
   // Combine factors and apply to base speed with additional scaling
   const adjustedSpeed =
