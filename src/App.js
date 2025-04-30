@@ -23,12 +23,12 @@ const calculateAdjustedSpeed = (baseSpeed, numSparkles, sparkleSize) => {
   const adjustedBaseSpeed = Math.max(baseSpeed, 15);
 
   // Scale factor increases with more sparkles and larger sizes
-  const sparkleFactor = Math.pow(numSparkles / 40, 1); // Steeper curve for number of sparkles
-  const sizeFactor = Math.pow(sparkleSize / 2.5, 0.5); // Steeper curve for sparkle size
+  const sparkleFactor = Math.pow(numSparkles, 0.25); // Steeper curve for number of sparkles
+  const sizeFactor = Math.pow(sparkleSize, 0.25); // Steeper curve for sparkle size
 
   // Combine factors and apply to base speed with additional scaling
   const adjustedSpeed =
-    adjustedBaseSpeed * (1 + sparkleFactor * sizeFactor * 1.5);
+    adjustedBaseSpeed * (1 + (sparkleFactor * sizeFactor) / 1.5);
 
   // Ensure minimum speed of 15ms and maximum of 3000ms
   return Math.min(Math.max(adjustedSpeed, 15), 3000);
