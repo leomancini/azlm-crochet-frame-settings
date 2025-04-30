@@ -19,8 +19,7 @@ const DEFAULT_COLORS = [
 // Function to calculate adjusted speed based on number of sparkles and size
 const calculateAdjustedSpeed = (baseSpeed, numSparkles, sparkleSize) => {
   // Base speed is in milliseconds, lower is faster
-  // Ensure a minimum base speed of 15ms
-  const adjustedBaseSpeed = Math.max(baseSpeed, 15);
+  const adjustedBaseSpeed = Math.max(baseSpeed, 5);
 
   // Scale factor increases with more sparkles and larger sizes
   const sparkleFactor = Math.pow(numSparkles, 0.25); // Steeper curve for number of sparkles
@@ -123,8 +122,9 @@ const Grid = styled.div`
 `;
 
 const Pixel = styled.div`
-  width: 0.25rem;
-  height: 0.25rem;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.25rem;
   background-color: ${(props) => props.color || "#000"};
 `;
 
