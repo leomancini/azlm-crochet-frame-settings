@@ -341,7 +341,7 @@ const GeneratePresetContainer = styled(Preset)`
   align-items: center;
   justify-content: center;
   gap: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.05);
+  background-color: rgba(255, 255, 255, 0.1);
   border-radius: 0.5rem;
   padding: 0.75rem 1rem 1rem 1rem;
   text-align: center;
@@ -658,8 +658,22 @@ function App() {
         preset.speed === speed
     );
     if (matchingPreset) {
-      setMatchingPresetName(matchingPreset.name);
-      return true;
+      // Only consider it a match if the settings are actually applied to the device
+      if (
+        appliedSettings &&
+        JSON.stringify(appliedSettings.colors) ===
+          JSON.stringify(
+            DEFAULT_COLORS.filter(
+              (_, index) => matchingPreset.activeColors[index]
+            )
+          ) &&
+        appliedSettings.num_sparkles === matchingPreset.numSparkles &&
+        appliedSettings.sparkle_size === matchingPreset.sparkleSize &&
+        appliedSettings.speed === matchingPreset.speed
+      ) {
+        setMatchingPresetName(matchingPreset.name);
+        return true;
+      }
     }
     setMatchingPresetName(null);
     return false;
@@ -683,7 +697,23 @@ function App() {
 
         if (matchingPreset) {
           setSelectedPreset(matchingPreset.id);
-          setPresetButtonState("applied");
+          // Only show as applied if the settings are actually applied to the device
+          if (
+            appliedSettings &&
+            JSON.stringify(appliedSettings.colors) ===
+              JSON.stringify(
+                DEFAULT_COLORS.filter(
+                  (_, index) => matchingPreset.activeColors[index]
+                )
+              ) &&
+            appliedSettings.num_sparkles === matchingPreset.numSparkles &&
+            appliedSettings.sparkle_size === matchingPreset.sparkleSize &&
+            appliedSettings.speed === matchingPreset.speed
+          ) {
+            setPresetButtonState("applied");
+          } else {
+            setPresetButtonState("apply");
+          }
         } else {
           setPresetButtonState("apply");
         }
@@ -702,7 +732,24 @@ function App() {
             selectedPresetData.speed === speed &&
             colorsMatch;
 
-          setPresetButtonState(isApplied ? "applied" : "apply");
+          // Only show as applied if the settings are actually applied to the device
+          if (
+            isApplied &&
+            appliedSettings &&
+            JSON.stringify(appliedSettings.colors) ===
+              JSON.stringify(
+                DEFAULT_COLORS.filter(
+                  (_, index) => selectedPresetData.activeColors[index]
+                )
+              ) &&
+            appliedSettings.num_sparkles === selectedPresetData.numSparkles &&
+            appliedSettings.sparkle_size === selectedPresetData.sparkleSize &&
+            appliedSettings.speed === selectedPresetData.speed
+          ) {
+            setPresetButtonState("applied");
+          } else {
+            setPresetButtonState("apply");
+          }
         }
       }
     }
@@ -726,12 +773,21 @@ function App() {
               speed === selectedPresetData.speed;
 
             if (colorsMatch && valuesMatch) {
-              // Preserve "saved" state when switching tabs
-              if (buttonState === "saved") {
-                // Keep the saved state
-              }
-              // Only show "applied" if the preset was actually applied
-              else if (presetButtonState === "applied") {
+              // Only show "applied" if the settings are actually applied to the device
+              if (
+                appliedSettings &&
+                JSON.stringify(appliedSettings.colors) ===
+                  JSON.stringify(
+                    DEFAULT_COLORS.filter(
+                      (_, index) => selectedPresetData.activeColors[index]
+                    )
+                  ) &&
+                appliedSettings.num_sparkles ===
+                  selectedPresetData.numSparkles &&
+                appliedSettings.sparkle_size ===
+                  selectedPresetData.sparkleSize &&
+                appliedSettings.speed === selectedPresetData.speed
+              ) {
                 setButtonState("applied");
               } else {
                 setButtonState("apply");
@@ -938,6 +994,9 @@ function App() {
 
     if (window.confirm(`Delete ${presetName}?`)) {
       deletePreset(presetId);
+      // After deletion, prevent any further interaction with this preset
+      setIsLongPress(true);
+      wasCanceled.current = true;
     } else {
       // If user cancels, prevent the preset from being selected
       setIsLongPress(false);
@@ -1068,7 +1127,11 @@ function App() {
         throw new Error("Failed to update settings");
       }
 
+      // Store the applied settings
+      setAppliedSettings(settings);
       setPresetButtonState("applied");
+      setButtonState("using");
+      setHasChanges(false);
     } catch (error) {
       console.error("Error applying preset:", error);
       setPresetButtonState("apply");
@@ -1110,9 +1173,10 @@ function App() {
       setSpeed(newPreset.speed);
       setSelectedPreset(newPreset.id);
       setMatchingPresetName(newPreset.name);
-      setHasChanges(false);
+      setHasChanges(true); // Set hasChanges to true since we have new settings
       setPresetButtonState("apply");
       setButtonState("apply");
+      setAppliedSettings(null); // Clear applied settings to prevent automatic matching
       console.log("State variables updated");
     } catch (error) {
       console.error("Error generating AI preset:", error);
@@ -1436,7 +1500,10 @@ function App() {
               buttonState === "applied" ||
               buttonState === "using" ||
               (buttonState === "apply" && !hasChanges && !selectedPreset) ||
-              (buttonState === "apply" && selectedPreset && !hasChanges)
+              (buttonState === "apply" &&
+                selectedPreset &&
+                !hasChanges &&
+                !appliedSettings)
             }
             isApply={
               buttonState === "apply" &&
@@ -1452,7 +1519,7 @@ function App() {
                 ? matchingPresetName
                   ? `Apply ${matchingPresetName}`
                   : "Apply"
-                : `Using ${matchingPresetName}`
+                : `Use ${matchingPresetName}`
               : buttonState === "use"
               ? `Use ${matchingPresetName}`
               : buttonState === "using"
