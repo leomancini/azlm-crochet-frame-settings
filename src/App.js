@@ -1,19 +1,21 @@
 import React, { useState, useEffect, useRef } from "react";
 import styled from "styled-components";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faPlus } from "@fortawesome/free-solid-svg-icons";
 
 const DEFAULT_COLORS = [
-  0xff0000, // Red
-  0xff8000, // Orange
-  0xffff00, // Yellow
-  0x00ff00, // Green
-  0x00ffff, // Cyan
-  0x0000ff, // Blue
-  0x8000ff, // Purple
-  0xff00ff, // Magenta
-  0xffffff, // White
-  0xff69b4, // Hot Pink
-  0xdda0dd, // Plum
-  0xffd700 // Gold
+  16711680, // Red
+  16744448, // Orange
+  16776960, // Yellow
+  65280, // Green
+  65535, // Cyan
+  255, // Blue
+  8388863, // Purple
+  16711935, // Magenta
+  16777215, // White
+  16738740, // Hot Pink
+  14524637, // Plum
+  16766720 // Gold
 ];
 
 // Function to calculate adjusted speed based on number of sparkles and size
@@ -91,8 +93,8 @@ const NoApiKeyMessage = styled.div`
 `;
 
 const LoadingSpinner = styled.div`
-  width: 2.5rem;
-  height: 2.5rem;
+  width: ${(props) => (props.size ? props.size : "2.5rem")};
+  height: ${(props) => (props.size ? props.size : "2.5rem")};
   border: 0.25rem solid rgba(255, 255, 255, 0.3);
   border-radius: 50%;
   border-top-color: #fff;
@@ -259,7 +261,6 @@ const Presets = styled.div`
   width: 100%;
   min-height: 0;
   align-items: stretch;
-  scroll-snap-type: x mandatory;
   scroll-behavior: smooth;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
@@ -267,21 +268,6 @@ const Presets = styled.div`
   &::-webkit-scrollbar {
     display: none;
   }
-`;
-
-const PresetPlaceholder = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  background-color: rgba(255, 255, 255, 0.05);
-  width: calc(100% - 3.5rem - 6rem);
-  margin: 0 auto;
-  color: rgba(255, 255, 255, 0.25);
-  border-radius: 0.5rem;
-  padding: 0 3rem;
-  text-align: center;
 `;
 
 const PresetSpacer = styled.div`
@@ -306,35 +292,31 @@ const Preset = styled.div`
   padding: 0.75rem 1rem 1rem 1rem;
   border-radius: 0.5rem;
   min-height: 0;
-  width: 100%;
   cursor: pointer;
   transition: transform 0.2s, background-color 0.2s;
   transform: scale(1);
   touch-action: manipulation;
+  flex: 0 0 30%;
 
-  &:first-child {
-    margin-left: 1.75rem;
-  }
+  ${({ numPresets }) =>
+    numPresets === 0 &&
+    `
+      width: 100%;
+      flex: unset;
+      margin-right: 1.75rem;
+    `}
+
+  ${({ numPresets, isGenerating }) =>
+    numPresets === 1 &&
+    `
+      width: 100%;
+      flex: ${isGenerating ? "0 0 30%" : "unset"};
+      margin-right: 0;
+    `}
 
   &:active {
     transform: scale(0.9);
   }
-
-  ${({ numPresets }) =>
-    numPresets === 2 &&
-    `
-      width: 50%;
-    `}
-
-  ${({ numPresets }) =>
-    numPresets > 2 &&
-    `
-      width: unset;
-      flex: 0 0 30%;
-      align-self: stretch;
-      scroll-snap-align: center;
-      scroll-snap-stop: always;
-    `}
 `;
 
 const PresetLabel = styled.div`
@@ -349,6 +331,51 @@ const PresetLabel = styled.div`
   margin-top: 0.25rem;
 `;
 
+const PresetIcon = styled.div`
+  font-size: 1.5rem;
+`;
+
+const GeneratePresetContainer = styled(Preset)`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem 1rem 1rem;
+  text-align: center;
+  flex: 0 0 30%;
+  margin-left: 1.75rem;
+  transition: transform 0.2s, background-color 0.2s;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.5);
+
+  ${({ isGenerating }) =>
+    isGenerating &&
+    `
+      color: rgba(255, 255, 255, 0.25);
+      cursor: not-allowed;
+    `}
+
+  ${({ numPresets, isGenerating }) =>
+    numPresets === 0 &&
+    `
+      width: 100%;
+      flex: unset;
+      margin-right: ${isGenerating ? "0" : "1.75rem"};
+    `}
+
+    ${({ numPresets, isGenerating }) =>
+    numPresets === 1 &&
+    `
+      width: 100%;
+      flex: ${isGenerating ? "0 0 30%" : "unset"};
+      margin-right: 0;
+    `}
+`;
+
 const PresetPreviewContainer = styled.div`
   display: flex;
   flex-direction: column;
@@ -361,8 +388,8 @@ const PresetPreviewContainer = styled.div`
 const PresetPreview = styled.div`
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 0.25rem;
-  padding: 0.25rem;
+  gap: 0.375rem;
+  padding: 0.5rem;
   background: #000000;
   aspect-ratio: 1 / 1;
   height: 100%;
@@ -370,12 +397,21 @@ const PresetPreview = styled.div`
   overflow: hidden;
   align-self: center;
   margin-top: 0.25rem;
+  border-radius: 0.5rem;
+`;
+
+const PresetPreviewLoading = styled(PresetPreview)`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
 `;
 
 const PresetPreviewPixel = styled.div`
   width: 100%;
-  height: 100%;
+  aspect-ratio: 1 / 1;
   background-color: ${(props) => props.color || "#000"};
+  border-radius: 100%;
 `;
 
 const Button = styled.button`
@@ -438,6 +474,12 @@ class Sparkle {
     const activeIndices = activeColors
       .map((active, index) => (active ? index : -1))
       .filter((index) => index !== -1);
+
+    // If no colors are active, use all colors
+    if (activeIndices.length === 0) {
+      return Math.floor(Math.random() * DEFAULT_COLORS.length);
+    }
+
     return activeIndices[Math.floor(Math.random() * activeIndices.length)];
   }
 
@@ -457,11 +499,11 @@ class Sparkle {
 function App() {
   // All hooks at the top
   const [activeColors, setActiveColors] = useState(
-    Array(DEFAULT_COLORS.length).fill(false)
+    Array(DEFAULT_COLORS.length).fill(true) // Initialize all colors as active
   );
-  const [numSparkles, setNumSparkles] = useState();
-  const [sparkleSize, setSparkleSize] = useState();
-  const [speed, setSpeed] = useState();
+  const [numSparkles, setNumSparkles] = useState(150); // Match the current value
+  const [sparkleSize, setSparkleSize] = useState(3); // Match the current value
+  const [speed, setSpeed] = useState(40); // Match the current value
   const [, setSparkles] = useState([]);
   const [grid, setGrid] = useState(
     Array(MATRIX_HEIGHT)
@@ -482,6 +524,9 @@ function App() {
   const [isLongPress, setIsLongPress] = useState(false);
   const pressStartTime = useRef(null);
   const wasCanceled = useRef(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [skipInitialFetch, setSkipInitialFetch] = useState(false);
+  const [appliedSettings, setAppliedSettings] = useState(null);
 
   // Function to get API key from URL parameters
   const getApiKey = () => {
@@ -490,9 +535,9 @@ function App() {
   };
 
   // Function to get API URL with key
-  const getApiUrl = () => {
+  const getApiUrl = (endpoint = "") => {
     const apiKey = getApiKey();
-    return `https://azlm-crochet-frame-server.noshado.ws/api/settings${
+    return `https://azlm-crochet-frame-server.noshado.ws/api/${endpoint}${
       apiKey ? `?apiKey=${apiKey}` : ""
     }`;
   };
@@ -502,22 +547,57 @@ function App() {
 
   // Fetch initial settings
   useEffect(() => {
-    if (!hasApiKey) return; // Early return if no API key
+    if (!hasApiKey || skipInitialFetch) return; // Early return if no API key or skip flag is set
 
     const fetchSettings = async () => {
       try {
-        const response = await fetch(getApiUrl());
+        const response = await fetch(getApiUrl("settings"));
         const settings = await response.json();
+
+        console.log("Raw API Response:", {
+          settings,
+          type: typeof settings,
+          colorsType: typeof settings.colors,
+          isArray: Array.isArray(settings.colors)
+        });
+
+        // Store the applied settings
+        setAppliedSettings(settings);
 
         // Update sparkle settings
         setNumSparkles(settings.num_sparkles);
         setSparkleSize(settings.sparkle_size);
         setSpeed(settings.speed);
 
+        // Ensure settings.colors is an array and contains numbers
+        const settingsColors = Array.isArray(settings.colors)
+          ? settings.colors.map(Number)
+          : [];
+
+        console.log("Settings colors after conversion:", {
+          original: settings.colors.map((c) => c.toString(16)),
+          converted: settingsColors.map((c) => c.toString(16))
+        });
+
         // Update active colors based on the colors array from API
-        const newActiveColors = DEFAULT_COLORS.map((color) =>
-          settings.colors.includes(color)
-        );
+        const newActiveColors = DEFAULT_COLORS.map((defaultColor, index) => {
+          const decimalValue = Number(defaultColor);
+          const isIncluded = settingsColors.includes(decimalValue);
+          console.log(`Checking color ${defaultColor.toString(16)}:`, {
+            defaultHex: defaultColor.toString(16),
+            defaultDecimal: decimalValue,
+            settingsColors: settingsColors.map((c) => c.toString(16)),
+            isIncluded
+          });
+          return isIncluded;
+        });
+
+        console.log("Final comparison:", {
+          defaultColors: DEFAULT_COLORS.map((c) => c.toString(16)),
+          settingsColors: settingsColors.map((c) => c.toString(16)),
+          newActiveColors
+        });
+
         setActiveColors(newActiveColors);
 
         // Check if current settings match any saved preset
@@ -587,61 +667,42 @@ function App() {
 
   const handleTabChange = async (tab) => {
     if (tab === "presets") {
-      try {
-        const response = await fetch(getApiUrl());
-        const settings = await response.json();
-
-        // Only check for matching preset if no preset is currently selected
-        if (!selectedPreset) {
-          const matchingPreset = savedPresets.find((preset) => {
-            const colorsMatch =
-              settings.colors.every(
-                (color) => preset.activeColors[DEFAULT_COLORS.indexOf(color)]
-              ) &&
-              preset.activeColors.filter(Boolean).length ===
-                settings.colors.length;
-
-            return (
-              preset.numSparkles === settings.num_sparkles &&
-              preset.sparkleSize === settings.sparkle_size &&
-              preset.speed === settings.speed &&
-              colorsMatch
-            );
-          });
-
-          if (matchingPreset) {
-            setSelectedPreset(matchingPreset.id);
-            setPresetButtonState("applied");
-          } else {
-            setPresetButtonState("apply");
-          }
-        } else {
-          // If a preset is already selected, check if it's applied
-          const selectedPresetData = savedPresets.find(
-            (p) => p.id === selectedPreset
+      // Only check for matching preset if no preset is currently selected
+      if (!selectedPreset) {
+        const matchingPreset = savedPresets.find((preset) => {
+          const colorsMatch = activeColors.every(
+            (active, index) => active === preset.activeColors[index]
           );
-          if (selectedPresetData) {
-            const colorsMatch =
-              settings.colors.every(
-                (color) =>
-                  selectedPresetData.activeColors[DEFAULT_COLORS.indexOf(color)]
-              ) &&
-              selectedPresetData.activeColors.filter(Boolean).length ===
-                settings.colors.length;
+          return (
+            preset.numSparkles === numSparkles &&
+            preset.sparkleSize === sparkleSize &&
+            preset.speed === speed &&
+            colorsMatch
+          );
+        });
 
-            const isApplied =
-              selectedPresetData.numSparkles === settings.num_sparkles &&
-              selectedPresetData.sparkleSize === settings.sparkle_size &&
-              selectedPresetData.speed === settings.speed &&
-              colorsMatch;
-
-            setPresetButtonState(isApplied ? "applied" : "apply");
-          }
-        }
-      } catch (error) {
-        console.error("Error checking API settings:", error);
-        if (!selectedPreset) {
+        if (matchingPreset) {
+          setSelectedPreset(matchingPreset.id);
+          setPresetButtonState("applied");
+        } else {
           setPresetButtonState("apply");
+        }
+      } else {
+        // If a preset is already selected, check if it's applied
+        const selectedPresetData = savedPresets.find(
+          (p) => p.id === selectedPreset
+        );
+        if (selectedPresetData) {
+          const colorsMatch = activeColors.every(
+            (active, index) => active === selectedPresetData.activeColors[index]
+          );
+          const isApplied =
+            selectedPresetData.numSparkles === numSparkles &&
+            selectedPresetData.sparkleSize === sparkleSize &&
+            selectedPresetData.speed === speed &&
+            colorsMatch;
+
+          setPresetButtonState(isApplied ? "applied" : "apply");
         }
       }
     }
@@ -706,7 +767,7 @@ function App() {
         };
 
         // Send POST request to update settings
-        const response = await fetch(getApiUrl(), {
+        const response = await fetch(getApiUrl("settings"), {
           method: "POST",
           headers: {
             "Content-Type": "application/json"
@@ -723,6 +784,8 @@ function App() {
           clearTimeout(window.applyTimeout);
         }
 
+        // Store the applied settings
+        setAppliedSettings(settings);
         setButtonState("applied");
         setHasChanges(false);
 
@@ -793,39 +856,31 @@ function App() {
         if (buttonState === "using" || buttonState === "applied") {
           setButtonState("using");
         } else {
-          // Check if these changes exactly match the saved server configuration
-          const isExactMatch = async () => {
-            try {
-              const response = await fetch(getApiUrl());
-              const settings = await response.json();
+          // Check if these changes exactly match the applied settings
+          if (appliedSettings) {
+            const colorsMatch =
+              JSON.stringify(
+                DEFAULT_COLORS.filter(
+                  (_, index) => matchingPreset.activeColors[index]
+                )
+              ) === JSON.stringify(appliedSettings.colors) &&
+              matchingPreset.activeColors.filter(Boolean).length ===
+                appliedSettings.colors.length;
 
-              const colorsMatch =
-                settings.colors.every(
-                  (color) =>
-                    matchingPreset.activeColors[DEFAULT_COLORS.indexOf(color)]
-                ) &&
-                matchingPreset.activeColors.filter(Boolean).length ===
-                  settings.colors.length;
+            const isMatch =
+              matchingPreset.numSparkles === appliedSettings.num_sparkles &&
+              matchingPreset.sparkleSize === appliedSettings.sparkle_size &&
+              matchingPreset.speed === appliedSettings.speed &&
+              colorsMatch;
 
-              const isMatch =
-                matchingPreset.numSparkles === settings.num_sparkles &&
-                matchingPreset.sparkleSize === settings.sparkle_size &&
-                matchingPreset.speed === settings.speed &&
-                colorsMatch;
-
-              if (isMatch) {
-                setButtonState("using");
-              } else if (buttonState !== "saved") {
-                setButtonState("use");
-              }
-            } catch (error) {
-              console.error("Error checking server settings:", error);
-              if (buttonState !== "saved") {
-                setButtonState("use");
-              }
+            if (isMatch) {
+              setButtonState("using");
+            } else if (buttonState !== "saved") {
+              setButtonState("use");
             }
-          };
-          isExactMatch();
+          } else if (buttonState !== "saved") {
+            setButtonState("use");
+          }
         }
         setHasChanges(false);
       } else {
@@ -845,58 +900,23 @@ function App() {
     hasChanges,
     savedPresets,
     buttonState,
-    hasApiKey
+    hasApiKey,
+    appliedSettings
   ]);
 
   const handleColorToggle = (index) => {
     setActiveColors((prev) => {
       const newActiveColors = [...prev];
       newActiveColors[index] = !newActiveColors[index];
+
+      // If all colors are now false, set the toggled color back to true
+      if (newActiveColors.every((color) => !color)) {
+        newActiveColors[index] = true;
+      }
+
       return newActiveColors;
     });
     handleValueChange();
-  };
-
-  const loadPreset = async (preset) => {
-    setActiveColors(preset.activeColors);
-    setNumSparkles(preset.numSparkles);
-    setSparkleSize(preset.sparkleSize);
-    setSpeed(preset.speed);
-    setSelectedPreset(preset.id);
-    setHasChanges(false);
-
-    try {
-      const response = await fetch(getApiUrl());
-      const settings = await response.json();
-
-      const colorsMatch =
-        settings.colors.every(
-          (color) => preset.activeColors[DEFAULT_COLORS.indexOf(color)]
-        ) &&
-        preset.activeColors.filter(Boolean).length === settings.colors.length;
-
-      const matches =
-        preset.numSparkles === settings.num_sparkles &&
-        preset.sparkleSize === settings.sparkle_size &&
-        preset.speed === settings.speed &&
-        colorsMatch;
-
-      // Update both states together to prevent flashing
-      if (matches) {
-        setPresetButtonState("applied");
-        setButtonState("applied");
-        setMatchingPresetName(preset.name);
-      } else {
-        setPresetButtonState("apply");
-        setButtonState("apply");
-        setMatchingPresetName(preset.name);
-      }
-    } catch (error) {
-      console.error("Error checking API settings:", error);
-      setPresetButtonState("apply");
-      setButtonState("apply");
-      setMatchingPresetName(preset.name);
-    }
   };
 
   const deletePreset = (presetId) => {
@@ -935,9 +955,47 @@ function App() {
       wasCanceled.current = false;
       return;
     }
-    loadPreset(preset);
-    setButtonState("apply");
-    setMatchingPresetName(preset.name);
+
+    console.log("Pressing preset with colors:", {
+      presetColors: preset.activeColors,
+      defaultColors: DEFAULT_COLORS.map((c) => c.toString(16))
+    });
+
+    // Set the colors first
+    setActiveColors(preset.activeColors);
+    setNumSparkles(preset.numSparkles);
+    setSparkleSize(preset.sparkleSize);
+    setSpeed(preset.speed);
+    setSelectedPreset(preset.id);
+    setHasChanges(true);
+
+    // Check if this preset matches the currently applied settings
+    if (appliedSettings) {
+      const colorsMatch =
+        JSON.stringify(
+          DEFAULT_COLORS.filter((_, index) => preset.activeColors[index])
+        ) === JSON.stringify(appliedSettings.colors) &&
+        preset.activeColors.filter(Boolean).length ===
+          appliedSettings.colors.length;
+
+      const isApplied =
+        preset.numSparkles === appliedSettings.num_sparkles &&
+        preset.sparkleSize === appliedSettings.sparkle_size &&
+        preset.speed === appliedSettings.speed &&
+        colorsMatch;
+
+      if (isApplied) {
+        setButtonState("using");
+        setPresetButtonState("applied");
+        setMatchingPresetName(preset.name);
+      } else {
+        setButtonState("apply");
+        setPresetButtonState("apply");
+      }
+    } else {
+      setButtonState("apply");
+      setPresetButtonState("apply");
+    }
   };
 
   const handlePresetPressStart = (preset, event) => {
@@ -998,7 +1056,7 @@ function App() {
       };
 
       // Send POST request to update settings
-      const response = await fetch(getApiUrl(), {
+      const response = await fetch(getApiUrl("settings"), {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -1017,19 +1075,109 @@ function App() {
     }
   };
 
+  const generateAIPreset = async () => {
+    console.log("Starting AI preset generation");
+    setIsGenerating(true);
+    setSkipInitialFetch(true); // Prevent initial settings fetch from overwriting our values
+    try {
+      const response = await fetch(getApiUrl("generate"));
+      const data = await response.json();
+      console.log("Received AI preset data:", data);
+
+      // Convert the API response to match our preset format
+      const newPreset = {
+        id: Date.now(),
+        name: data.theme || "AI Generated",
+        activeColors: DEFAULT_COLORS.map((color) =>
+          data.colors.includes(color)
+        ),
+        numSparkles: data.num_sparkles,
+        sparkleSize: data.sparkle_size,
+        speed: data.speed
+      };
+      console.log("Created new preset:", newPreset);
+
+      // Add preset to the list
+      const updatedPresets = [newPreset, ...savedPresets];
+      setSavedPresets(updatedPresets);
+      localStorage.setItem("sparklePresets", JSON.stringify(updatedPresets));
+
+      // Update the state variables with the new preset's settings
+      console.log("Updating state variables...");
+      setActiveColors(newPreset.activeColors);
+      setNumSparkles(newPreset.numSparkles);
+      setSparkleSize(newPreset.sparkleSize);
+      setSpeed(newPreset.speed);
+      setSelectedPreset(newPreset.id);
+      setMatchingPresetName(newPreset.name);
+      setHasChanges(false);
+      setPresetButtonState("apply");
+      setButtonState("apply");
+      console.log("State variables updated");
+    } catch (error) {
+      console.error("Error generating AI preset:", error);
+      setPresetButtonState("apply");
+      setButtonState("apply");
+    } finally {
+      setIsGenerating(false);
+      console.log("Finished AI preset generation");
+    }
+  };
+
   useEffect(() => {
-    // Initialize sparkles
+    console.log("Animation effect triggered with:", {
+      numSparkles,
+      sparkleSize,
+      activeColors,
+      speed,
+      hasApiKey,
+      isLoading
+    });
+
+    if (!numSparkles || !sparkleSize || !speed || isLoading) {
+      console.log("Missing required values:", {
+        numSparkles,
+        sparkleSize,
+        speed,
+        isLoading
+      });
+      return;
+    }
+
+    // Initialize sparkles based on the current state
     const initialSparkles = Array(numSparkles)
       .fill()
       .map(() => new Sparkle(activeColors, sparkleSize));
+    console.log("Created initial sparkles:", initialSparkles.length);
     setSparkles(initialSparkles);
 
-    // Calculate adjusted speed based on current settings - only for browser simulation
+    // Calculate and set the initial grid state immediately
+    const initialGrid = Array(MATRIX_HEIGHT)
+      .fill()
+      .map(() => Array(MATRIX_WIDTH).fill(0));
+    initialSparkles.forEach((sparkle) => {
+      for (let x = 0; x < sparkleSize; x++) {
+        for (let y = 0; y < sparkleSize; y++) {
+          if (
+            sparkle.currentX + x < MATRIX_WIDTH &&
+            sparkle.currentY + y < MATRIX_HEIGHT
+          ) {
+            initialGrid[sparkle.currentY + y][sparkle.currentX + x] =
+              DEFAULT_COLORS[sparkle.colorIndex];
+          }
+        }
+      }
+    });
+    console.log("Setting initial grid state");
+    setGrid(initialGrid);
+
+    // Calculate adjusted speed based on current settings
     const adjustedSpeed = calculateAdjustedSpeed(
       speed,
       numSparkles,
       sparkleSize
     );
+    console.log("Starting animation with adjusted speed:", adjustedSpeed);
 
     // Animation loop
     const interval = setInterval(() => {
@@ -1061,8 +1209,11 @@ function App() {
       });
     }, adjustedSpeed);
 
-    return () => clearInterval(interval);
-  }, [activeColors, numSparkles, sparkleSize, speed]);
+    return () => {
+      console.log("Cleaning up animation effect");
+      clearInterval(interval);
+    };
+  }, [activeColors, numSparkles, sparkleSize, speed, isLoading, hasApiKey]);
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -1130,15 +1281,33 @@ function App() {
         return (
           <>
             <Presets>
-              {savedPresets.length === 0 ? (
-                <PresetPlaceholder>
-                  When you save presets,
-                  <br />
-                  they'll show up here.
-                </PresetPlaceholder>
-              ) : (
+              <GeneratePresetContainer
+                onClick={generateAIPreset}
+                isGenerating={isGenerating}
+                numPresets={savedPresets.length}
+              >
+                <PresetIcon>
+                  <FontAwesomeIcon icon={faPlus} />
+                </PresetIcon>
+                Generate
+              </GeneratePresetContainer>
+              {isGenerating && (
+                <Preset
+                  isGenerating={isGenerating}
+                  numPresets={savedPresets.length}
+                >
+                  <PresetPreviewContainer>
+                    <PresetPreviewLoading>
+                      <LoadingSpinner size="1.75rem" />
+                    </PresetPreviewLoading>
+                    <PresetLabel>Loading</PresetLabel>
+                  </PresetPreviewContainer>
+                </Preset>
+              )}
+              {savedPresets.length > 0 &&
                 savedPresets.map((preset) => (
                   <Preset
+                    isGenerating={isGenerating}
                     key={preset.id}
                     selected={selectedPreset === preset.id}
                     onClick={(event) => handlePresetPress(preset, event)}
@@ -1196,8 +1365,7 @@ function App() {
                     </PresetPreviewContainer>
                     <PresetLabel>{preset.name}</PresetLabel>
                   </Preset>
-                ))
-              )}
+                ))}
               {savedPresets.length > 0 && <PresetSpacer />}
             </Presets>
           </>
