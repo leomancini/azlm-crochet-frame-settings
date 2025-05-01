@@ -1,4 +1,4 @@
-# azlm-crochet-frame-settings
+# AZLM Crochet Frame Settings
 
 Identifier: azlm-crochet-frame-settings
 
