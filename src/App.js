@@ -296,7 +296,7 @@ const Preset = styled.div`
   transition: transform 0.2s, background-color 0.2s;
   transform: scale(1);
   touch-action: manipulation;
-  flex: 0 0 30%;
+  flex: 0 0 28%;
 
   ${({ numPresets }) =>
     numPresets === 0 &&
@@ -310,7 +310,7 @@ const Preset = styled.div`
     numPresets === 1 &&
     `
       width: 100%;
-      flex: ${isGenerating ? "0 0 30%" : "unset"};
+      flex: ${isGenerating ? "0 0 28%" : "unset"};
       margin-right: 0;
     `}
 
@@ -345,9 +345,9 @@ const GeneratePresetContainer = styled(Preset)`
   border-radius: 0.5rem;
   padding: 0.75rem 1rem 1rem 1rem;
   text-align: center;
-  flex: 0 0 30%;
+  flex: 0 0 28%;
   margin-left: 1.75rem;
-  transition: transform 0.2s, background-color 0.2s;
+  transition: transform 0.2s, background-color 0.2s, opacity 0.2s;
   font-size: 1.125rem;
   font-weight: 600;
   color: rgba(255, 255, 255, 0.5);
@@ -355,8 +355,8 @@ const GeneratePresetContainer = styled(Preset)`
   ${({ isGenerating }) =>
     isGenerating &&
     `
-      color: rgba(255, 255, 255, 0.25);
       cursor: not-allowed;
+      opacity: 0.5;
     `}
 
   ${({ numPresets, isGenerating }) =>
@@ -371,7 +371,7 @@ const GeneratePresetContainer = styled(Preset)`
     numPresets === 1 &&
     `
       width: 100%;
-      flex: ${isGenerating ? "0 0 30%" : "unset"};
+      flex: ${isGenerating ? "0 0 28%" : "unset"};
       margin-right: 0;
     `}
 `;
@@ -1539,29 +1539,33 @@ function App() {
               : "Save preset"}
           </Button>
         )}
-        {activeTab === "presets" && savedPresets.length > 0 && (
-          <Button
-            onClick={handlePresetApply}
-            disabled={
-              presetButtonState === "applying" ||
-              presetButtonState === "applied" ||
-              !selectedPreset
-            }
-            isApply={presetButtonState === "apply" && selectedPreset}
-          >
-            {presetButtonState === "apply"
-              ? "Apply"
-              : presetButtonState === "applying"
-              ? "Applying"
-              : presetButtonState === "applied"
-              ? `Using ${
-                  savedPresets.find((p) => p.id === selectedPreset)?.name || ""
-                }`
-              : `Using ${
-                  savedPresets.find((p) => p.id === selectedPreset)?.name || ""
-                }`}
-          </Button>
-        )}
+        {activeTab === "presets" &&
+          (savedPresets.length > 0 ||
+            (savedPresets.length === 0 && isGenerating)) && (
+            <Button
+              onClick={handlePresetApply}
+              disabled={
+                presetButtonState === "applying" ||
+                presetButtonState === "applied" ||
+                !selectedPreset
+              }
+              isApply={presetButtonState === "apply" && selectedPreset}
+            >
+              {presetButtonState === "apply"
+                ? "Apply"
+                : presetButtonState === "applying"
+                ? "Applying"
+                : presetButtonState === "applied"
+                ? `Using ${
+                    savedPresets.find((p) => p.id === selectedPreset)?.name ||
+                    ""
+                  }`
+                : `Using ${
+                    savedPresets.find((p) => p.id === selectedPreset)?.name ||
+                    ""
+                  }`}
+            </Button>
+          )}
       </Controls>
     </Page>
   );
