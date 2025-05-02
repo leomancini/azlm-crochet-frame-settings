@@ -24,7 +24,7 @@ const calculateAdjustedSpeed = (baseSpeed, numSparkles, sparkleSize) => {
   const adjustedBaseSpeed = Math.max(baseSpeed, 1);
 
   // Scale factor increases with more sparkles and larger sizes
-  const sparkleFactor = Math.pow(numSparkles, 0.1);
+  const sparkleFactor = Math.pow(numSparkles, 0.4);
   const sizeFactor = Math.pow(sparkleSize, 0.1);
 
   // Combine factors and apply to base speed with additional scaling
