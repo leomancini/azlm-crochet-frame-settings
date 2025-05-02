@@ -1331,9 +1331,10 @@ function App() {
                 type="range"
                 min="10"
                 max="100"
-                value={100 - speed}
+                value={speed}
+                style={{ direction: "rtl" }}
                 onChange={(e) => {
-                  const newValue = 100 - parseInt(e.target.value);
+                  const newValue = parseInt(e.target.value);
                   setSpeed(newValue);
                   handleValueChange();
                 }}
